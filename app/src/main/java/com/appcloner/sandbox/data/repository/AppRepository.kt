@@ -54,14 +54,11 @@ class AppRepository(private val context: Context) {
         for (pkg in clonedPackageNames) {
             val instances = engineManager.getInstalledInstances(pkg)
             if (instances.isNotEmpty()) {
-                val appName: String
-                val appIcon = try {
+                val (appName, appIcon) = try {
                     val appInfo = packageManager.getApplicationInfo(pkg, 0)
-                    appName = packageManager.getApplicationLabel(appInfo).toString()
-                    packageManager.getApplicationIcon(appInfo)
+                    Pair(packageManager.getApplicationLabel(appInfo).toString(), packageManager.getApplicationIcon(appInfo))
                 } catch (e: Exception) {
-                    appName = pkg
-                    null
+                    Pair(pkg, null)
                 }
 
                 for (inst in instances.sortedBy { it.userId }) {

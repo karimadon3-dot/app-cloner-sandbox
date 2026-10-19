@@ -213,7 +213,7 @@ fun HomeScreen(repository: AppRepository) {
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(4),
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(vertical = 10.dp, bottom = 40.dp)
+                                contentPadding = PaddingValues(top = 10.dp, bottom = 40.dp, start = 4.dp, end = 4.dp)
                             ) {
                                 items(homeScreenItems) { item ->
                                     HomeAppIconItem(
