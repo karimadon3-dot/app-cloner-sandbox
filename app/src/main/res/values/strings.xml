@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">App Cloner Sandbox</string>
+    <string name="tab_cloned">برنامه‌های شبیه‌سازی شده</string>
+    <string name="tab_all">تمام برنامه‌ها</string>
+    <string name="search_placeholder">جستجوی برنامه...</string>
+    <string name="btn_clone">شبیه‌سازی (کلون)</string>
+    <string name="btn_launch">اجرا</string>
+    <string name="btn_add_instance">افزودن نسخه جدید (+)</string>
+    <string name="dialog_instances_title">مدیریت نسخه‌ها</string>
+    <string name="instance_label">نسخه شماره %1$d</string>
+    <string name="toast_cloned_success">نسخه جدید با موفقیت ساخته شد</string>
+    <string name="toast_delete_success">نسخه با موفقیت حذف شد</string>
+    <string name="delete">حذف</string>
+    <string name="cancel">انصراف</string>
+</resources>
