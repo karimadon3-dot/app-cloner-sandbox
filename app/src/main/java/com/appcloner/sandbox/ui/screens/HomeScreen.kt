@@ -4,6 +4,9 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,18 +16,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.appcloner.sandbox.data.model.ClonedAppGroup
+import com.appcloner.sandbox.core.ShortcutHelper
+import com.appcloner.sandbox.data.model.HomeScreenAppItem
 import com.appcloner.sandbox.data.model.InstalledApp
 import com.appcloner.sandbox.data.repository.AppRepository
-import com.appcloner.sandbox.ui.components.ClonedAppCard
-import com.appcloner.sandbox.ui.components.InstalledAppCard
-import com.appcloner.sandbox.ui.components.InstanceManagementDialog
+import com.appcloner.sandbox.ui.components.*
 import com.appcloner.sandbox.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -34,20 +34,19 @@ fun HomeScreen(repository: AppRepository) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var selectedTab by remember { mutableStateOf(0) } // 0: Cloned Apps, 1: All Installed Apps
+    var selectedTab by remember { mutableStateOf(0) } // 0: Home Screen Desktop, 1: Add Apps
     var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
 
-    var clonedApps by remember { mutableStateOf<List<ClonedAppGroup>>(emptyList()) }
+    var homeScreenItems by remember { mutableStateOf<List<HomeScreenAppItem>>(emptyList()) }
     var installedApps by remember { mutableStateOf<List<InstalledApp>>(emptyList()) }
-    var selectedAppForManagement by remember { mutableStateOf<ClonedAppGroup?>(null) }
+    var selectedActionItem by remember { mutableStateOf<HomeScreenAppItem?>(null) }
 
-    // بارگذاری داده‌ها
     fun refreshData() {
         scope.launch {
             isLoading = true
             try {
-                clonedApps = repository.getClonedApps()
+                homeScreenItems = repository.getHomeScreenClonedItems()
                 installedApps = repository.getInstalledDeviceApps()
             } catch (e: Exception) {
                 Toast.makeText(context, "خطا در بارگذاری: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
@@ -74,7 +73,7 @@ fun HomeScreen(repository: AppRepository) {
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Layers,
+                                imageVector = Icons.Default.Apps,
                                 contentDescription = null,
                                 tint = TextPrimary,
                                 modifier = Modifier.size(22.dp)
@@ -83,13 +82,13 @@ fun HomeScreen(repository: AppRepository) {
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "App Cloner Sandbox",
-                                fontSize = 18.sp,
+                                text = "صفحه هوم برنامه‌ها (کلونر)",
+                                fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
                             )
                             Text(
-                                text = "ایزولاسیون و چندکاربرگی برنامه‌ها",
+                                text = "${homeScreenItems.size} برنامه فعال روی صفحه",
                                 fontSize = 11.sp,
                                 color = AccentCyan
                             )
@@ -114,51 +113,10 @@ fun HomeScreen(repository: AppRepository) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 14.dp)
         ) {
-            // سرچ‌بار
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                placeholder = {
-                    Text(
-                        text = "جستجوی نام یا پکیج برنامه...",
-                        color = TextSecondary,
-                        fontSize = 13.sp
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = TextSecondary
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = null,
-                                tint = TextSecondary
-                            )
-                        }
-                    }
-                },
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryIndigo,
-                    unfocusedBorderColor = CardBorder,
-                    focusedContainerColor = DarkSurface,
-                    unfocusedContainerColor = DarkSurface,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                singleLine = true
-            )
+            // بنر بررسی و تنظیم دسترسی‌های سیستمی
+            PermissionCheckBanner(onDismissBanner = {})
 
             // تب‌های ناوبری
             TabRow(
@@ -172,24 +130,13 @@ fun HomeScreen(repository: AppRepository) {
                     onClick = { selectedTab = 0 },
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Home, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "نسخه‌های کلون شده",
+                                text = "صفحه هوم",
                                 fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
                                 color = if (selectedTab == 0) TextPrimary else TextSecondary
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (selectedTab == 0) PrimaryIndigo else DarkSurfaceLight)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = "${clonedApps.sumOf { it.instances.size }}",
-                                    fontSize = 10.sp,
-                                    color = TextPrimary
-                                )
-                            }
                         }
                     }
                 )
@@ -197,11 +144,15 @@ fun HomeScreen(repository: AppRepository) {
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     text = {
-                        Text(
-                            text = "همه برنامه‌های گوشی",
-                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == 1) TextPrimary else TextSecondary
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.AddCircleOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "افزودن برنامه (+)",
+                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selectedTab == 1) TextPrimary else TextSecondary
+                            )
+                        }
                     }
                 )
             }
@@ -218,13 +169,8 @@ fun HomeScreen(repository: AppRepository) {
             } else {
                 when (selectedTab) {
                     0 -> {
-                        // لیست برنامه‌های کلون شده
-                        val filteredClones = clonedApps.filter {
-                            it.name.contains(searchQuery, ignoreCase = true) ||
-                            it.packageName.contains(searchQuery, ignoreCase = true)
-                        }
-
-                        if (filteredClones.isEmpty()) {
+                        // نمایش به صورت شبکه صفحه هوم گوشی (Home Screen 4-Column Grid)
+                        if (homeScreenItems.isEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -233,16 +179,23 @@ fun HomeScreen(repository: AppRepository) {
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(
-                                        imageVector = Icons.Default.FilterNone,
+                                        imageVector = Icons.Default.DashboardCustomize,
                                         contentDescription = null,
                                         tint = TextSecondary.copy(alpha = 0.5f),
                                         modifier = Modifier.size(64.dp)
                                     )
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(14.dp))
                                     Text(
-                                        text = "هیچ برنامه‌ای هنوز کلون نشده است",
+                                        text = "صفحه هوم خالی است",
+                                        color = TextPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "از تب «افزودن برنامه» نرم‌افزارهای خود را کلون کنید",
                                         color = TextSecondary,
-                                        fontSize = 15.sp
+                                        fontSize = 12.sp
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
@@ -250,36 +203,38 @@ fun HomeScreen(repository: AppRepository) {
                                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text(text = "انتخاب برنامه برای کلون کردن")
+                                        Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(text = "افزودن اولین برنامه")
                                     }
                                 }
                             }
                         } else {
-                            LazyColumn(
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(4),
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(bottom = 20.dp)
+                                contentPadding = PaddingValues(vertical = 10.dp, bottom = 40.dp)
                             ) {
-                                items(filteredClones) { clonedApp ->
-                                    ClonedAppCard(
-                                        clonedApp = clonedApp,
-                                        onManageInstances = { selectedAppForManagement = clonedApp },
-                                        onQuickLaunch = { userId ->
-                                            val launched = repository.launchInstance(clonedApp.packageName, userId)
+                                items(homeScreenItems) { item ->
+                                    HomeAppIconItem(
+                                        item = item,
+                                        onClick = {
+                                            // اجرای مستقیم با پیام مشخص در صورت خطا
+                                            val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
                                             if (!launched) {
-                                                Toast.makeText(context, "خطا در اجرای برنامه", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_LONG).show()
                                             }
                                         },
-                                        onAddClone = {
-                                            scope.launch {
-                                                val res = repository.cloneApp(clonedApp.packageName)
-                                                if (res.isSuccess) {
-                                                    Toast.makeText(context, "نسخه جدید با موفقیت ایجاد شد", Toast.LENGTH_SHORT).show()
-                                                    refreshData()
-                                                } else {
-                                                    Toast.makeText(context, "خطا در ساخت نسخه جدید", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
+                                        onLongClick = {
+                                            selectedActionItem = item
                                         }
+                                    )
+                                }
+
+                                // تایل افزودن در انتهای صفحه هوم
+                                item {
+                                    AddAppHomeTile(
+                                        onClick = { selectedTab = 1 }
                                     )
                                 }
                             }
@@ -287,13 +242,44 @@ fun HomeScreen(repository: AppRepository) {
                     }
 
                     1 -> {
-                        // لیست همه برنامه‌های نصب شده روی گوشی
+                        // تب افزودن از تمام برنامه‌های نصب شده روی گوشی
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            placeholder = {
+                                Text(text = "جستجوی برنامه برای کلون...", color = TextSecondary, fontSize = 13.sp)
+                            },
+                            leadingIcon = {
+                                Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = TextSecondary)
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(imageVector = Icons.Default.Clear, contentDescription = null, tint = TextSecondary)
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryIndigo,
+                                unfocusedBorderColor = CardBorder,
+                                focusedContainerColor = DarkSurface,
+                                unfocusedContainerColor = DarkSurface,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            ),
+                            singleLine = true
+                        )
+
                         val filteredApps = installedApps.filter {
                             it.name.contains(searchQuery, ignoreCase = true) ||
                             it.packageName.contains(searchQuery, ignoreCase = true)
                         }
 
-                        val clonedPackageNames = clonedApps.map { it.packageName }.toSet()
+                        val clonedPackageNames = homeScreenItems.map { it.packageName }.toSet()
 
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
@@ -308,11 +294,11 @@ fun HomeScreen(repository: AppRepository) {
                                         scope.launch {
                                             val res = repository.cloneApp(app.packageName)
                                             if (res.isSuccess) {
-                                                Toast.makeText(context, "نسخه کپی با موفقیت ساخته شد", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "نسخه جدید ${app.name} به صفحه هوم اضافه شد", Toast.LENGTH_SHORT).show()
                                                 refreshData()
-                                                selectedTab = 0 // انتقال به تب کلون‌ها
+                                                selectedTab = 0 // بازگشت به صفحه هوم
                                             } else {
-                                                Toast.makeText(context, "خطا در ایجاد کلون", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "خطا در ساخت کلون", Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                     }
@@ -325,38 +311,45 @@ fun HomeScreen(repository: AppRepository) {
         }
     }
 
-    // دیالوگ مدیریت نسخه‌ها
-    selectedAppForManagement?.let { appGroup ->
-        InstanceManagementDialog(
-            clonedApp = appGroup,
-            onDismiss = { selectedAppForManagement = null },
-            onLaunchInstance = { userId ->
-                val launched = repository.launchInstance(appGroup.packageName, userId)
+    // دیالوگ اکشن‌های هر برنامه در صفحه هوم
+    selectedActionItem?.let { item ->
+        AppActionDialog(
+            item = item,
+            onDismiss = { selectedActionItem = null },
+            onLaunch = {
+                val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
                 if (!launched) {
-                    Toast.makeText(context, "خطا در اجرای برنامه", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_LONG).show()
                 }
             },
-            onDeleteInstance = { userId ->
+            onPinToHomeScreen = {
+                val pinned = ShortcutHelper.createHomeScreenShortcut(
+                    context = context,
+                    packageName = item.packageName,
+                    appName = item.originalName,
+                    instanceNumber = item.instanceNumber,
+                    iconDrawable = item.icon
+                )
+                if (pinned) {
+                    Toast.makeText(context, "میانبر ${item.displayName} به صفحه اصلی گوشی اضافه شد", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "لانچر گوشی شما اجازه ایجاد میانبر خودکار نداد", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onCloneNextInstance = {
                 scope.launch {
-                    val deleted = repository.deleteInstance(appGroup.packageName, userId)
-                    if (deleted) {
-                        Toast.makeText(context, "نسخه با موفقیت حذف شد", Toast.LENGTH_SHORT).show()
+                    val res = repository.cloneApp(item.packageName)
+                    if (res.isSuccess) {
+                        Toast.makeText(context, "نسخه جدید ایجاد و به صفحه هوم افزوده شد", Toast.LENGTH_SHORT).show()
                         refreshData()
-                        // بروزرسانی آیتم دیالوگ
-                        val updated = repository.getClonedApps().find { it.packageName == appGroup.packageName }
-                        if (updated == null || updated.instances.isEmpty()) {
-                            selectedAppForManagement = null
-                        } else {
-                            selectedAppForManagement = updated
-                        }
                     }
                 }
             },
-            onAddAnotherClone = {
+            onDeleteInstance = {
                 scope.launch {
-                    val res = repository.cloneApp(appGroup.packageName)
-                    if (res.isSuccess) {
-                        Toast.makeText(context, "نسخه جدید اضافه شد", Toast.LENGTH_SHORT).show()
+                    val deleted = repository.deleteInstance(item.packageName, item.userId)
+                    if (deleted) {
+                        Toast.makeText(context, "${item.displayName} از صفحه هوم حذف شد", Toast.LENGTH_SHORT).show()
                         refreshData()
                     }
                 }

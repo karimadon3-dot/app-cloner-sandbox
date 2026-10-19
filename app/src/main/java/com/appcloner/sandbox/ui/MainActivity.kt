@@ -1,6 +1,7 @@
 package com.appcloner.sandbox.ui
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +18,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        appRepository = AppRepository(applicationContext)
+        appRepository = AppRepository(this)
+
+        // بررسی اینکه آیا از طریق میانبر صفحه اصلی گوشی فراخوانی شده است
+        val shortcutPkg = intent.getStringExtra("EXTRA_PACKAGE_NAME")
+        if (shortcutPkg != null) {
+            val userId = intent.getIntExtra("EXTRA_USER_ID", 0)
+            val (launched, error) = appRepository.launchInstance(this, shortcutPkg, userId)
+            if (!launched) {
+                Toast.makeText(this, "خطا در اجرای میانبر: $error", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         setContent {
             AppClonerSandboxTheme {

@@ -1,10 +1,12 @@
 package com.appcloner.sandbox.data.repository
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import com.appcloner.sandbox.core.VirtualEngineManager
 import com.appcloner.sandbox.data.model.ClonedAppGroup
+import com.appcloner.sandbox.data.model.HomeScreenAppItem
 import com.appcloner.sandbox.data.model.InstalledApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,64 +17,69 @@ class AppRepository(private val context: Context) {
     private val engineManager = VirtualEngineManager.getInstance(context)
 
     /**
-     * استخراج تمام برنامه‌های نصب شده روی گوشی کاربر (به جز خود برنامه کلونر)
+     * استخراج تمام برنامه‌های نصب شده روی گوشی با فیلتر اکتیویتی ورود
      */
     suspend fun getInstalledDeviceApps(): List<InstalledApp> = withContext(Dispatchers.IO) {
-        val packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
         val currentPackage = context.packageName
+        val intent = Intent(Intent.ACTION_MAIN, null).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        val resolveInfos = packageManager.queryIntentActivities(intent, 0)
 
-        packages
-            .filter { it.packageName != currentPackage }
-            // فیلتر برنامه‌های دارای لانچر و صفحه ورود
-            .filter { packageManager.getLaunchIntentForPackage(it.packageName) != null }
-            .map { appInfo ->
+        resolveInfos
+            .filter { it.activityInfo.packageName != currentPackage }
+            .map { resolveInfo ->
+                val pkg = resolveInfo.activityInfo.packageName
+                val name = resolveInfo.loadLabel(packageManager).toString()
+                val icon = resolveInfo.loadIcon(packageManager)
                 InstalledApp(
-                    packageName = appInfo.packageName,
-                    name = packageManager.getApplicationLabel(appInfo).toString(),
-                    icon = packageManager.getApplicationIcon(appInfo),
-                    isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    packageName = pkg,
+                    name = name,
+                    icon = icon,
+                    isSystemApp = (resolveInfo.activityInfo.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
                 )
             }
+            .distinctBy { it.packageName }
             .sortedBy { it.name.lowercase() }
     }
 
     /**
-     * دریافت لیست برنامه‌هایی که در سندباکس کلون شده‌اند به همراه نسخه‌های فعالشان
+     * استخراج تک‌تک نسخه‌های کلون‌شده به عنوان آیتم‌های صفحه اصلی (Home Screen)
+     * هر کلون به شکل یک برنامه مجزا با شماره (مثل «تلگرام ۱»، «تلگرام ۲») نمایش می‌یابد.
      */
-    suspend fun getClonedApps(): List<ClonedAppGroup> = withContext(Dispatchers.IO) {
+    suspend fun getHomeScreenClonedItems(): List<HomeScreenAppItem> = withContext(Dispatchers.IO) {
         val clonedPackageNames = engineManager.getAllClonedPackageNames()
-        val result = mutableListOf<ClonedAppGroup>()
+        val items = mutableListOf<HomeScreenAppItem>()
 
         for (pkg in clonedPackageNames) {
             val instances = engineManager.getInstalledInstances(pkg)
             if (instances.isNotEmpty()) {
-                try {
+                val appName: String
+                val appIcon = try {
                     val appInfo = packageManager.getApplicationInfo(pkg, 0)
-                    val name = packageManager.getApplicationLabel(appInfo).toString()
-                    val icon = packageManager.getApplicationIcon(appInfo)
+                    appName = packageManager.getApplicationLabel(appInfo).toString()
+                    packageManager.getApplicationIcon(appInfo)
+                } catch (e: Exception) {
+                    appName = pkg
+                    null
+                }
 
-                    result.add(
-                        ClonedAppGroup(
+                for (inst in instances.sortedBy { it.userId }) {
+                    val number = inst.userId + 1
+                    items.add(
+                        HomeScreenAppItem(
                             packageName = pkg,
-                            name = name,
-                            icon = icon,
-                            instances = instances
-                        )
-                    )
-                } catch (e: PackageManager.NameNotFoundException) {
-                    // در صورتی که برنامه اصلی از سیستم حذف شده باشد
-                    result.add(
-                        ClonedAppGroup(
-                            packageName = pkg,
-                            name = pkg,
-                            icon = null,
-                            instances = instances
+                            originalName = appName,
+                            displayName = "$appName $number",
+                            instanceNumber = number,
+                            userId = inst.userId,
+                            icon = appIcon
                         )
                     )
                 }
             }
         }
-        result
+        items
     }
 
     /**
@@ -84,14 +91,14 @@ class AppRepository(private val context: Context) {
     }
 
     /**
-     * اجرای یک نسخه خاص
+     * اجرای قطعی نسخه برنامه
      */
-    fun launchInstance(packageName: String, userId: Int): Boolean {
-        return engineManager.launchClonedApp(packageName, userId)
+    fun launchInstance(callerContext: Context, packageName: String, userId: Int): Pair<Boolean, String?> {
+        return engineManager.launchClonedApp(callerContext, packageName, userId)
     }
 
     /**
-     * حذف یک نسخه خاص
+     * حذف نسخه
      */
     suspend fun deleteInstance(packageName: String, userId: Int): Boolean {
         return engineManager.removeCloneInstance(packageName, userId)
