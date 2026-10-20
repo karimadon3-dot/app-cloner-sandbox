@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appcloner.sandbox.core.ShortcutHelper
+import com.appcloner.sandbox.core.SystemDualAppHelper
 import com.appcloner.sandbox.data.model.HomeScreenAppItem
 import com.appcloner.sandbox.data.model.InstalledApp
 import com.appcloner.sandbox.data.repository.AppRepository
