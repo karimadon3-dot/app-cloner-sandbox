@@ -24,8 +24,7 @@ import com.appcloner.sandbox.ui.theme.*
 fun AppActionDialog(
     item: HomeScreenAppItem,
     onDismiss: () -> Unit,
-    onLaunchRawSandbox: () -> Unit,
-    onLaunchNormal: () -> Unit,
+    onLaunch: () -> Unit,
     onOpenSystemDualApp: () -> Unit,
     onPinToHomeScreen: () -> Unit,
     onCloneNextInstance: () -> Unit,
@@ -44,7 +43,7 @@ fun AppActionDialog(
                     .padding(20.dp)
                     .fillMaxWidth()
             ) {
-                // هدر
+                // هدر دیالوگ
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -59,7 +58,7 @@ fun AppActionDialog(
                             fontSize = 17.sp
                         )
                         Text(
-                            text = "شناسه نسخه: ${item.instanceNumber}",
+                            text = "شماره نسخه: ${item.instanceNumber}",
                             color = AccentCyan,
                             fontSize = 12.sp
                         )
@@ -73,23 +72,23 @@ fun AppActionDialog(
                 Divider(color = CardBorder)
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // ۱. اجرای به عنوان نسخه خام جهت ثبت‌نام جدید (گزینه اصلی)
+                // ۱. اجرای مستقیم این نسخه
                 ActionRowItem(
-                    icon = Icons.Default.FiberNew,
-                    label = "اجرا به صورت کاملاً خام (ثبت‌نام اکانت جدید)",
-                    subtitle = "حافظه و نشست ایزوله، ورود با شماره جدید",
+                    icon = Icons.Default.PlayArrow,
+                    label = "اجرای این نسخه (${item.displayName})",
+                    subtitle = "اجرای مستقیم با یک لمس",
                     tint = NeonGreen,
                     onClick = {
                         onDismiss()
-                        onLaunchRawSandbox()
+                        onLaunch()
                     }
                 )
 
-                // ۲. فعال‌سازی کلونر کارخانه‌ای گوشی (Dual App)
+                // ۲. فعال‌سازی در کلونر رسمی گوشی (Dual App)
                 ActionRowItem(
                     icon = Icons.Default.SettingsSuggest,
                     label = "فعال‌سازی در کلونر رسمی گوشی (Dual App)",
-                    subtitle = "سامسونگ Dual Messenger / شیائومی Dual Apps",
+                    subtitle = "سامسونگ Dual Messenger / شیائومی Dual Apps (خام و بدون دستکاری برنامه اصلی)",
                     tint = AccentCyan,
                     onClick = {
                         onDismiss()
@@ -97,23 +96,11 @@ fun AppActionDialog(
                     }
                 )
 
-                // ۳. اجرای عادی برنامه
-                ActionRowItem(
-                    icon = Icons.Default.PlayArrow,
-                    label = "اجرای عادی برنامه اصلی",
-                    subtitle = "اجرای نسخه نصب شده فعلی در سیستم",
-                    tint = PrimaryIndigo,
-                    onClick = {
-                        onDismiss()
-                        onLaunchNormal()
-                    }
-                )
-
-                // ۴. افزودن میانبر به صفحه اصلی گوشی
+                // ۳. افزودن میانبر به صفحه اصلی گوشی
                 ActionRowItem(
                     icon = Icons.Default.PushPin,
                     label = "افزودن میانبر به صفحه اصلی گوشی",
-                    subtitle = "سنجاق آیکون با نام و شماره نسخه روی دسکتاپ",
+                    subtitle = "سنجاق آیکون اختصاصی با شماره روی صفحه اصلی",
                     tint = PurpleGrey80,
                     onClick = {
                         onDismiss()
@@ -121,11 +108,11 @@ fun AppActionDialog(
                     }
                 )
 
-                // ۵. ساخت شماره بعدی
+                // ۴. ساخت شماره بعدی
                 ActionRowItem(
                     icon = Icons.Default.Add,
                     label = "ساخت شماره بعدی (نسخه ${item.instanceNumber + 1})",
-                    subtitle = null,
+                    subtitle = "ایجاد کلون جدید در صفحه هوم",
                     tint = PrimaryIndigo,
                     onClick = {
                         onDismiss()
@@ -133,10 +120,10 @@ fun AppActionDialog(
                     }
                 )
 
-                // ۶. حذف
+                // ۵. حذف
                 ActionRowItem(
                     icon = Icons.Default.Delete,
-                    label = "حذف این نسخه از صفحه",
+                    label = "حذف این نسخه از صفحه هوم",
                     subtitle = null,
                     tint = DangerRed,
                     onClick = {

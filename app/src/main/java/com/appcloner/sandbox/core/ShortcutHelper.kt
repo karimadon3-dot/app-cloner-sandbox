@@ -26,12 +26,12 @@ object ShortcutHelper {
             return false
         }
 
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName) ?: Intent(context, MainActivity::class.java).apply {
+        val launchIntent = Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
             putExtra("EXTRA_PACKAGE_NAME", packageName)
             putExtra("EXTRA_USER_ID", instanceNumber - 1)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
-        launchIntent.action = Intent.ACTION_MAIN
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
 
         // تبدیل دراویبل به بیتمپ برای آیکون میانبر
         val bitmap = iconDrawable?.let { d ->

@@ -1,5 +1,6 @@
 package com.appcloner.sandbox.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -20,15 +21,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         appRepository = AppRepository(this)
 
-        // بررسی اینکه آیا از طریق میانبر صفحه اصلی گوشی فراخوانی شده است
-        val shortcutPkg = intent.getStringExtra("EXTRA_PACKAGE_NAME")
-        if (shortcutPkg != null) {
-            val userId = intent.getIntExtra("EXTRA_USER_ID", 0)
-            val (launched, error) = appRepository.launchInstance(this, shortcutPkg, userId)
-            if (!launched) {
-                Toast.makeText(this, "خطا در اجرای میانبر: $error", Toast.LENGTH_SHORT).show()
-            }
-        }
+        handleShortcutLaunch(intent)
 
         setContent {
             AppClonerSandboxTheme {
@@ -38,6 +31,23 @@ class MainActivity : ComponentActivity() {
                 ) {
                     HomeScreen(repository = appRepository)
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShortcutLaunch(intent)
+    }
+
+    private fun handleShortcutLaunch(intent: Intent?) {
+        val shortcutPkg = intent?.getStringExtra("EXTRA_PACKAGE_NAME")
+        if (shortcutPkg != null) {
+            val userId = intent.getIntExtra("EXTRA_USER_ID", 0)
+            val (launched, error) = appRepository.launchInstance(this, shortcutPkg, userId)
+            if (!launched) {
+                Toast.makeText(this, "خطا در اجرای میانبر: $error", Toast.LENGTH_SHORT).show()
             }
         }
     }

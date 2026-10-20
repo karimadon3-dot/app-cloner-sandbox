@@ -116,7 +116,7 @@ fun HomeScreen(repository: AppRepository) {
                 .padding(paddingValues)
                 .padding(horizontal = 14.dp)
         ) {
-            // بنر بررسی و تنظیم دسترسی‌های سیستمی
+            // بنر راهنمای دسترسی
             PermissionCheckBanner(onDismissBanner = {})
 
             // تب‌های ناوبری
@@ -220,9 +220,14 @@ fun HomeScreen(repository: AppRepository) {
                                     HomeAppIconItem(
                                         item = item,
                                         onClick = {
-                                            selectedActionItem = item
+                                            // لمس تک‌ضربه: اجرای مستقیم برنامه کلون شده
+                                            val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
+                                            if (!launched) {
+                                                Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_SHORT).show()
+                                            }
                                         },
                                         onLongClick = {
+                                            // با نگه داشتن انگشت روی اپلیکیشن: باز شدن منوی تنظیمات و گزینه‌ها
                                             selectedActionItem = item
                                         }
                                     )
@@ -308,18 +313,15 @@ fun HomeScreen(repository: AppRepository) {
         }
     }
 
-    // دیالوگ اکشن‌های هر برنامه در صفحه هوم
+    // دیالوگ اکشن‌های هر برنامه در صفحه هوم با نگه داشتن انگشت
     selectedActionItem?.let { item ->
         AppActionDialog(
             item = item,
             onDismiss = { selectedActionItem = null },
-            onLaunchRawSandbox = {
-                IsolatedSandboxActivity.start(context, item.packageName, item.originalName, item.userId)
-            },
-            onLaunchNormal = {
+            onLaunch = {
                 val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
                 if (!launched) {
-                    Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_SHORT).show()
                 }
             },
             onOpenSystemDualApp = {
@@ -359,5 +361,4 @@ fun HomeScreen(repository: AppRepository) {
             }
         )
     }
-
 }
