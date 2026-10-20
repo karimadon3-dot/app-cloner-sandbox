@@ -220,11 +220,13 @@ fun HomeScreen(repository: AppRepository) {
                                     HomeAppIconItem(
                                         item = item,
                                         onClick = {
-                                            // لمس تک‌ضربه: اجرای مستقیم برنامه کلون شده
-                                            val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
-                                            if (!launched) {
-                                                Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_SHORT).show()
-                                            }
+                                            // لمس تک‌ضربه: اجرای مستقیم محیط ایزوله و مستقل
+                                            IsolatedSandboxActivity.start(
+                                                context = context,
+                                                packageName = item.packageName,
+                                                appName = item.originalName,
+                                                userId = item.userId
+                                            )
                                         },
                                         onLongClick = {
                                             // با نگه داشتن انگشت روی اپلیکیشن: باز شدن منوی تنظیمات و گزینه‌ها
@@ -319,10 +321,12 @@ fun HomeScreen(repository: AppRepository) {
             item = item,
             onDismiss = { selectedActionItem = null },
             onLaunch = {
-                val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
-                if (!launched) {
-                    Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_SHORT).show()
-                }
+                IsolatedSandboxActivity.start(
+                    context = context,
+                    packageName = item.packageName,
+                    appName = item.originalName,
+                    userId = item.userId
+                )
             },
             onOpenSystemDualApp = {
                 SystemDualAppHelper.openSystemDualAppSetting(context, item.packageName)
