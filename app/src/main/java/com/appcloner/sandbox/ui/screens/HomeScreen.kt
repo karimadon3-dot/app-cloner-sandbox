@@ -219,11 +219,7 @@ fun HomeScreen(repository: AppRepository) {
                                     HomeAppIconItem(
                                         item = item,
                                         onClick = {
-                                            // اجرای مستقیم با پیام مشخص در صورت خطا
-                                            val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
-                                            if (!launched) {
-                                                Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_LONG).show()
-                                            }
+                                            selectedActionItem = item
                                         },
                                         onLongClick = {
                                             selectedActionItem = item
@@ -316,11 +312,17 @@ fun HomeScreen(repository: AppRepository) {
         AppActionDialog(
             item = item,
             onDismiss = { selectedActionItem = null },
-            onLaunch = {
+            onLaunchRawSandbox = {
+                IsolatedSandboxActivity.start(context, item.packageName, item.originalName, item.userId)
+            },
+            onLaunchNormal = {
                 val (launched, errorMsg) = repository.launchInstance(context, item.packageName, item.userId)
                 if (!launched) {
                     Toast.makeText(context, "خطا در اجرا: ${errorMsg ?: "عدم پاسخ برنامه"}", Toast.LENGTH_LONG).show()
                 }
+            },
+            onOpenSystemDualApp = {
+                SystemDualAppHelper.openSystemDualAppSetting(context, item.packageName)
             },
             onPinToHomeScreen = {
                 val pinned = ShortcutHelper.createHomeScreenShortcut(
@@ -356,4 +358,5 @@ fun HomeScreen(repository: AppRepository) {
             }
         )
     }
+
 }

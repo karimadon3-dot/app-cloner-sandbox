@@ -45,6 +45,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.screens.IsolatedSandboxActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/Theme.AppClonerSandbox" />
+
+
         <!-- BlackBox Core Virtual Service / Process Providers -->
         <provider
             android:name="top.niunaijun.blackbox.core.system.BProcessProvider"

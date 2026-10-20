@@ -24,7 +24,9 @@ import com.appcloner.sandbox.ui.theme.*
 fun AppActionDialog(
     item: HomeScreenAppItem,
     onDismiss: () -> Unit,
-    onLaunch: () -> Unit,
+    onLaunchRawSandbox: () -> Unit,
+    onLaunchNormal: () -> Unit,
+    onOpenSystemDualApp: () -> Unit,
     onPinToHomeScreen: () -> Unit,
     onCloneNextInstance: () -> Unit,
     onDeleteInstance: () -> Unit
@@ -57,7 +59,7 @@ fun AppActionDialog(
                             fontSize = 17.sp
                         )
                         Text(
-                            text = "شناسه کانتینر: ${item.userId}",
+                            text = "شناسه نسخه: ${item.instanceNumber}",
                             color = AccentCyan,
                             fontSize = 12.sp
                         )
@@ -67,34 +69,63 @@ fun AppActionDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 Divider(color = CardBorder)
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // گزینه‌های منو
+                // ۱. اجرای به عنوان نسخه خام جهت ثبت‌نام جدید (گزینه اصلی)
                 ActionRowItem(
-                    icon = Icons.Default.PlayArrow,
-                    label = "اجرای ${item.displayName}",
+                    icon = Icons.Default.FiberNew,
+                    label = "اجرا به صورت کاملاً خام (ثبت‌نام اکانت جدید)",
+                    subtitle = "حافظه و نشست ایزوله، ورود با شماره جدید",
                     tint = NeonGreen,
                     onClick = {
                         onDismiss()
-                        onLaunch()
+                        onLaunchRawSandbox()
                     }
                 )
 
+                // ۲. فعال‌سازی کلونر کارخانه‌ای گوشی (Dual App)
+                ActionRowItem(
+                    icon = Icons.Default.SettingsSuggest,
+                    label = "فعال‌سازی در کلونر رسمی گوشی (Dual App)",
+                    subtitle = "سامسونگ Dual Messenger / شیائومی Dual Apps",
+                    tint = AccentCyan,
+                    onClick = {
+                        onDismiss()
+                        onOpenSystemDualApp()
+                    }
+                )
+
+                // ۳. اجرای عادی برنامه
+                ActionRowItem(
+                    icon = Icons.Default.PlayArrow,
+                    label = "اجرای عادی برنامه اصلی",
+                    subtitle = "اجرای نسخه نصب شده فعلی در سیستم",
+                    tint = PrimaryIndigo,
+                    onClick = {
+                        onDismiss()
+                        onLaunchNormal()
+                    }
+                )
+
+                // ۴. افزودن میانبر به صفحه اصلی گوشی
                 ActionRowItem(
                     icon = Icons.Default.PushPin,
                     label = "افزودن میانبر به صفحه اصلی گوشی",
-                    tint = AccentCyan,
+                    subtitle = "سنجاق آیکون با نام و شماره نسخه روی دسکتاپ",
+                    tint = PurpleGrey80,
                     onClick = {
                         onDismiss()
                         onPinToHomeScreen()
                     }
                 )
 
+                // ۵. ساخت شماره بعدی
                 ActionRowItem(
                     icon = Icons.Default.Add,
-                    label = "ساخت نسخه بعدی از این برنامه",
+                    label = "ساخت شماره بعدی (نسخه ${item.instanceNumber + 1})",
+                    subtitle = null,
                     tint = PrimaryIndigo,
                     onClick = {
                         onDismiss()
@@ -102,9 +133,11 @@ fun AppActionDialog(
                     }
                 )
 
+                // ۶. حذف
                 ActionRowItem(
                     icon = Icons.Default.Delete,
-                    label = "حذف این نسخه",
+                    label = "حذف این نسخه از صفحه",
+                    subtitle = null,
                     tint = DangerRed,
                     onClick = {
                         onDismiss()
@@ -120,35 +153,45 @@ fun AppActionDialog(
 private fun ActionRowItem(
     icon: ImageVector,
     label: String,
+    subtitle: String?,
     tint: androidx.compose.ui.graphics.Color,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 3.dp)
             .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(34.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
                 .background(tint.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
         }
 
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
-        Text(
-            text = label,
-            color = TextPrimary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                color = TextPrimary,
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    color = TextSecondary,
+                    fontSize = 10.5.sp
+                )
+            }
+        }
     }
 }
